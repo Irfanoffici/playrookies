@@ -151,6 +151,10 @@ class RookiesGame {
       calibGirlsVal: document.getElementById('calib-girls-val'),
       calibBoysFill: document.getElementById('calib-boys-fill'),
       calibGirlsFill: document.getElementById('calib-girls-fill'),
+      rodeDetectedBadge: document.getElementById('rode-detected-badge'),
+      rodeHardwareTag: document.getElementById('rode-hardware-tag'),
+      btnApplyRodePreset: document.getElementById('btn-apply-rode-preset'),
+      rodeOptimizationCard: document.getElementById('rode-optimization-card'),
 
       // Announcement & Victory
       announcementOverlay: document.getElementById('announcement-overlay'),
@@ -515,6 +519,73 @@ class RookiesGame {
     if (this.ui.btnQuickAutoCalib) this.ui.btnQuickAutoCalib.addEventListener('click', handleAutoCalib);
     if (this.ui.btnModalAutoCalib) this.ui.btnModalAutoCalib.addEventListener('click', handleAutoCalib);
 
+    // Apply 1-Click RØDE Wireless GO II Optimization Preset
+    if (this.ui.btnApplyRodePreset) {
+      this.ui.btnApplyRodePreset.addEventListener('click', async () => {
+        const devices = await window.gameAudio.getAudioInputDevices(true);
+        const rodeDev = devices.find(d => window.gameAudio.isRodeDevice(d.label));
+        const targetDevId = rodeDev ? rodeDev.deviceId : (window.gameAudio.leftDeviceId || 'default');
+
+        await window.gameAudio.applyRodePreset(targetDevId);
+
+        // Switch engine & UI mode to stereo
+        await this._setAudioMode('stereo');
+
+        // Update calibration sliders to tuned 2.2x gain & 42 dB gate
+        updateBoysGain(2.2);
+        updateBoysGate(42);
+        updateGirlsGain(2.2);
+        updateGirlsGate(42);
+
+        if (this.ui.quickSensitivity) {
+          this.ui.quickSensitivity.value = 2.2;
+          this.ui.quickSensVal.textContent = '2.2x';
+        }
+        if (this.ui.quickThreshold) {
+          this.ui.quickThreshold.value = 42;
+          this.ui.quickThreshVal.textContent = '42 dB';
+        }
+        if (this.ui.boostThresholdSlider) {
+          this.ui.boostThresholdSlider.value = 80;
+          this.ui.boostThresholdVal.textContent = '80 dB';
+        }
+
+        // Update device selects across footer and modal
+        if (this.ui.quickSelectLeftMic) this.ui.quickSelectLeftMic.value = targetDevId;
+        if (this.ui.quickSelectRightMic) this.ui.quickSelectRightMic.value = targetDevId;
+        if (this.ui.selectModalLeftMic) this.ui.selectModalLeftMic.value = targetDevId;
+        if (this.ui.selectModalRightMic) this.ui.selectModalRightMic.value = targetDevId;
+        if (this.ui.quickSelectSingleMic) this.ui.quickSelectSingleMic.value = targetDevId;
+        if (this.ui.selectModalSingleMic) this.ui.selectModalSingleMic.value = targetDevId;
+
+        this._updateThresholdMarkers();
+        this._updateMicLabels();
+
+        // Update badge and UI tag
+        if (this.ui.rodeDetectedBadge) {
+          this.ui.rodeDetectedBadge.classList.remove('hidden');
+        }
+        if (this.ui.rodeHardwareTag) {
+          this.ui.rodeHardwareTag.textContent = 'ACTIVE';
+          this.ui.rodeHardwareTag.classList.add('detected');
+        }
+
+        const originalHtml = this.ui.btnApplyRodePreset.innerHTML;
+        this.ui.btnApplyRodePreset.innerHTML = `
+          <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <span>RØDE Profile Active!</span>
+        `;
+        this.ui.btnApplyRodePreset.classList.add('btn-success');
+
+        this._showNotification('RØDE Wireless GO II Profile Active (TX1 Boys | TX2 Girls)');
+
+        setTimeout(() => {
+          this.ui.btnApplyRodePreset.innerHTML = originalHtml;
+          this.ui.btnApplyRodePreset.classList.remove('btn-success');
+        }, 2200);
+      });
+    }
+
     // Settings Modal Open/Close
     this.ui.btnCalibrate.addEventListener('click', async () => {
       await this._populateAudioDevices(false);
@@ -587,6 +658,36 @@ class RookiesGame {
     });
 
     this._updateThresholdMarkers();
+
+    // Headless QA test parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('modal') === '1') {
+      this.ui.modalSettings.classList.remove('hidden');
+    }
+    if (urlParams.get('rode') === '1') {
+      window.gameAudio.inputMode = 'stereo';
+      window.gameAudio.boysSensitivity = 2.2;
+      window.gameAudio.girlsSensitivity = 2.2;
+      window.gameAudio.boysNoiseFloor = 42;
+      window.gameAudio.girlsNoiseFloor = 42;
+      if (this.ui.quickAudioMode) this.ui.quickAudioMode.value = 'stereo';
+      if (this.ui.audioInputMode) this.ui.audioInputMode.value = 'stereo';
+      if (this.ui.quickSensitivity) {
+        this.ui.quickSensitivity.value = 2.2;
+        this.ui.quickSensVal.textContent = '2.2x';
+      }
+      if (this.ui.quickThreshold) {
+        this.ui.quickThreshold.value = 42;
+        this.ui.quickThreshVal.textContent = '42 dB';
+      }
+      if (this.ui.rodeDetectedBadge) this.ui.rodeDetectedBadge.classList.remove('hidden');
+      if (this.ui.rodeHardwareTag) {
+        this.ui.rodeHardwareTag.textContent = 'ACTIVE';
+        this.ui.rodeHardwareTag.classList.add('detected');
+      }
+      this._updateMicLabels();
+      this._showNotification('RØDE Wireless GO II Profile Active [TX1: Boys | TX2: Girls]');
+    }
   }
 
   _updateThresholdMarkers() {
@@ -618,6 +719,14 @@ class RookiesGame {
       this.ui.modalSingleMicFields.style.display = (mode === 'single-shared') ? 'block' : 'none';
     }
 
+    if (this.ui.rodeDetectedBadge) {
+      if (mode === 'stereo' || (this.ui.rodeHardwareTag && this.ui.rodeHardwareTag.classList.contains('detected'))) {
+        this.ui.rodeDetectedBadge.classList.remove('hidden');
+      } else {
+        this.ui.rodeDetectedBadge.classList.add('hidden');
+      }
+    }
+
     this._updateMicLabels();
   }
 
@@ -637,19 +746,28 @@ class RookiesGame {
       if (sel) sel.innerHTML = '';
     });
 
+    let hasRodeDevice = false;
+    let rodeDev = null;
+
     if (devices && devices.length > 0) {
       devices.forEach((d, index) => {
-        const label = d.label || `Microphone ${index + 1}`;
+        const isRode = d.isRode || window.gameAudio.isRodeDevice(d.label);
+        if (isRode) {
+          hasRodeDevice = true;
+          if (!rodeDev) rodeDev = d;
+        }
+        const labelPrefix = isRode ? '[RØDE] ' : '';
+        const label = labelPrefix + (d.label || `Microphone ${index + 1}`);
         selects.forEach(sel => {
           if (sel) sel.add(new Option(label, d.deviceId));
         });
       });
 
       if (!window.gameAudio.leftDeviceId && devices[0]) {
-        window.gameAudio.leftDeviceId = devices[0].deviceId;
+        window.gameAudio.leftDeviceId = rodeDev ? rodeDev.deviceId : devices[0].deviceId;
       }
       if (!window.gameAudio.rightDeviceId) {
-        window.gameAudio.rightDeviceId = devices.length > 1 ? devices[1].deviceId : devices[0].deviceId;
+        window.gameAudio.rightDeviceId = (devices.length > 1 && !rodeDev) ? devices[1].deviceId : devices[0].deviceId;
       }
     } else {
       selects.forEach(sel => {
@@ -669,6 +787,25 @@ class RookiesGame {
     if (this.ui.selectModalLeftMic) this.ui.selectModalLeftMic.value = currentLeft;
     if (this.ui.selectModalRightMic) this.ui.selectModalRightMic.value = currentRight;
     if (this.ui.selectModalSingleMic) this.ui.selectModalSingleMic.value = currentLeft;
+
+    // Update RØDE hardware status indicators
+    if (this.ui.rodeHardwareTag) {
+      if (hasRodeDevice) {
+        this.ui.rodeHardwareTag.textContent = 'DETECTED';
+        this.ui.rodeHardwareTag.classList.add('detected');
+      } else {
+        this.ui.rodeHardwareTag.textContent = 'READY (STANDBY)';
+        this.ui.rodeHardwareTag.classList.remove('detected');
+      }
+    }
+
+    if (this.ui.rodeDetectedBadge) {
+      if (hasRodeDevice || window.gameAudio.inputMode === 'stereo') {
+        this.ui.rodeDetectedBadge.classList.remove('hidden');
+      } else {
+        this.ui.rodeDetectedBadge.classList.add('hidden');
+      }
+    }
 
     this._updateMicLabels();
   }
@@ -695,8 +832,27 @@ class RookiesGame {
     }
 
     if (window.gameAudio.inputMode === 'stereo') {
-      this.ui.boysMicName.textContent = 'STEREO L';
-      this.ui.girlsMicName.textContent = 'STEREO R';
+      const isRodeActive = (this.ui.rodeHardwareTag && this.ui.rodeHardwareTag.classList.contains('detected')) ||
+        window.gameAudio.isRodeDevice(this.ui.quickSelectLeftMic?.selectedOptions[0]?.textContent || '') ||
+        window.gameAudio.isRodeDevice(this.ui.selectModalLeftMic?.selectedOptions[0]?.textContent || '');
+
+      if (isRodeActive) {
+        if (!window.gameAudio.isSwapped) {
+          this.ui.boysMicName.textContent = 'RØDE TX1 (L)';
+          this.ui.girlsMicName.textContent = 'RØDE TX2 (R)';
+        } else {
+          this.ui.boysMicName.textContent = 'RØDE TX2 (R)';
+          this.ui.girlsMicName.textContent = 'RØDE TX1 (L)';
+        }
+      } else {
+        if (!window.gameAudio.isSwapped) {
+          this.ui.boysMicName.textContent = 'STEREO L';
+          this.ui.girlsMicName.textContent = 'STEREO R';
+        } else {
+          this.ui.boysMicName.textContent = 'STEREO R';
+          this.ui.girlsMicName.textContent = 'STEREO L';
+        }
+      }
       this.ui.boysMicName.style.display = 'inline-block';
       this.ui.girlsMicName.style.display = 'inline-block';
       return;
@@ -1689,6 +1845,22 @@ class RookiesGame {
       ctx.restore();
     }
     ctx.restore();
+  }
+
+  _showNotification(msg, duration = 3000) {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast-notification';
+      toast.className = 'toast-notification';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      toast.classList.add('hidden');
+    }, duration);
   }
 }
 

@@ -83,6 +83,48 @@ class AudioEngine {
     this.girlsNoiseFloor = val;
   }
 
+  /**
+   * Helper to detect RØDE Wireless GO II and related RØDE wireless transmitters
+   */
+  isRodeDevice(label) {
+    if (!label || typeof label !== 'string') return false;
+    return /wireless\s*go\s*ii|wireless\s*go\s*2|wireless\s*go|wgo\s*ii|rode|røde/i.test(label);
+  }
+
+  /**
+   * 1-Click RØDE Wireless GO II Acoustic & Routing Profile
+   * Optimizes the engine for RØDE's dual-channel RX USB/analog output:
+   * - Sets Stereo Split routing (TX1 = Left = Boys, TX2 = Right = Girls)
+   * - Calibrates preamp gain to 2.2x for maximum crowd shout headroom before digital rail clipping
+   * - Sets dual noise gate to 42 dB SPL (filters room background noise without eating vocal attack)
+   * - Sets turbo threshold to 80 dB
+   */
+  async applyRodePreset(deviceId = null) {
+    this.inputMode = 'stereo';
+    if (deviceId && deviceId !== '__request__') {
+      this.leftDeviceId = deviceId;
+      this.rightDeviceId = deviceId;
+    }
+    this.boysSensitivity = 2.2;
+    this.girlsSensitivity = 2.2;
+    this.boysNoiseFloor = 42;
+    this.girlsNoiseFloor = 42;
+    this.boostThreshold = 80;
+
+    if (this.isListening) {
+      await this.startListening();
+    }
+
+    return {
+      success: true,
+      mode: 'stereo',
+      sensitivity: 2.2,
+      noiseFloor: 42,
+      boostThreshold: 80,
+      deviceId: this.leftDeviceId
+    };
+  }
+
   async initAudioContext() {
     if (!this.audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -311,7 +353,7 @@ class AudioEngine {
    * Advanced Acoustic Group Sound Pressure Calculation
    * Measures vocal formant energy density (250Hz - 4500Hz) combined with RMS & True Peak.
    */
-  _calculateAcousticSPL(analyser, timeBuffer, freqBuffer) {
+  _calculateAcousticSPL(analyser, timeBuffer, freqBuffer, channelSensitivity = null) {
     if (!analyser || !timeBuffer || !freqBuffer) return 32;
 
     // 1. Time-Domain RMS & True Peak
@@ -526,11 +568,22 @@ class AudioEngine {
         audioInputs = devices.filter(d => d.kind === 'audioinput');
       }
 
-      return audioInputs;
+      return audioInputs.map(d => ({
+        deviceId: d.deviceId,
+        groupId: d.groupId,
+        kind: d.kind,
+        label: d.label,
+        isRode: this.isRodeDevice(d.label)
+      }));
     } catch (err) {
       console.warn('Could not enumerate audio devices:', err);
       return [];
     }
+  }
+
+  async detectRodeDevice(requestPermission = false) {
+    const devices = await this.getAudioInputDevices(requestPermission);
+    return devices.find(d => this.isRodeDevice(d.label)) || null;
   }
 
   /* ================= PROCEDURAL SYNTHESIZER SFX ================= */
