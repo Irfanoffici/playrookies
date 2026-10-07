@@ -651,43 +651,38 @@ body, html {
 #hud-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 18px;
-  background: rgba(8, 11, 24, 0.94);
+  justify-content: center;
+  padding: 6px 14px;
+  background: rgba(8, 11, 24, 0.95);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 2px solid var(--border-glow);
   z-index: 10;
-  gap: 12px;
+  gap: 10px;
 }
 
 .console-module {
-  background: rgba(18, 22, 38, 0.85);
+  background: rgba(18, 22, 38, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 6px 12px 8px;
+  padding: 5px 10px 6px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .module-audio {
-  flex: 1.35;
-  min-width: 420px;
-  max-width: 500px;
+  flex: 0 0 auto;
 }
 
 .module-tuning {
-  flex: 1.15;
-  min-width: 380px;
-  max-width: 440px;
+  flex: 0 0 auto;
 }
 
 .module-ops {
-  flex: 1;
-  min-width: 320px;
-  max-width: 380px;
+  flex: 0 0 auto;
 }
 
 .module-header-row {
@@ -764,14 +759,25 @@ body, html {
 .module-controls-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.console-btn {
-  padding: 7px 12px;
-  font-size: 0.8rem;
-  border-radius: 8px;
+#hud-footer .btn {
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  border-radius: 7px;
+  gap: 4px;
   white-space: nowrap;
+}
+
+#hud-footer .console-btn {
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+#hud-footer .console-btn .svg-icon {
+  width: 14px;
+  height: 14px;
 }
 
 /* Format mini dropdown */
@@ -779,12 +785,12 @@ body, html {
   background: #111827;
   color: var(--accent-lime);
   border: 1px solid rgba(212, 248, 121, 0.35);
-  padding: 7px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
   font-family: var(--font-ui);
   font-weight: 800;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   outline: none;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -794,31 +800,52 @@ body, html {
   border-color: var(--accent-lime);
 }
 
-.master-cta-btn {
-  flex: 1;
+#hud-footer .master-cta-btn {
+  flex: 0 0 auto;
   justify-content: center;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  letter-spacing: 0.8px;
-  white-space: nowrap;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.4px;
+  gap: 5px;
 }
 
-.btn-auto-calib {
-  padding: 6px 10px;
-  font-size: 0.72rem;
+#hud-footer .master-cta-btn .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+#hud-footer .btn-auto-calib {
+  padding: 4px 7px;
+  font-size: 0.66rem;
   font-weight: 800;
-  border-radius: 8px;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  gap: 4px;
+}
+
+#hud-footer .btn-auto-calib .svg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+#hud-footer .btn-icon {
+  padding: 5px 7px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+#hud-footer .btn-icon .svg-icon {
+  width: 15px;
+  height: 15px;
 }
 
 /* Quick Mic Assignment Bar in Deck Bay 1 */
 .quick-mic-selector-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 3px 6px;
+  padding: 2px 5px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -826,15 +853,15 @@ body, html {
 .quick-mic-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .mic-label-badge {
   font-family: 'Russo One', var(--font-display);
-  font-size: 0.72rem;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
+  font-size: 0.68rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -883,12 +910,12 @@ body, html {
   background: #111827;
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 0.74rem;
+  padding: 2px 4px;
+  border-radius: 5px;
+  font-size: 0.69rem;
   font-family: var(--font-ui);
-  width: 105px;
-  max-width: 130px;
+  width: 68px;
+  max-width: 80px;
   outline: none;
   cursor: pointer;
   white-space: nowrap;
@@ -938,9 +965,9 @@ body, html {
 }
 
 .btn-swap {
-  padding: 4px 6px;
+  padding: 3px 4px;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 5px;
   color: var(--accent-gold);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -970,23 +997,23 @@ body, html {
 .quick-slider-group {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
+  gap: 3px;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-dim);
 }
 
 .quick-slider-group input[type="range"] {
-  width: 52px;
+  width: 36px;
   accent-color: var(--accent-lime);
   cursor: pointer;
 }
 
 .quick-slider-group span {
-  min-width: 38px;
+  min-width: 25px;
   color: var(--text-white);
   font-weight: 800;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
 }
 
