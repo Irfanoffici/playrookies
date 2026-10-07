@@ -1,0 +1,9 @@
+services:
+  playrookies:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: playrookies
+    restart: unless-stopped
+    ports:
+      - "80:80"
