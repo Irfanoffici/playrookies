@@ -1,0 +1,12 @@
+{
+  "name": "playrookies",
+  "version": "1.0.0",
+  "description": "Rookies - Collegiate Crowd Voice Derby",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
