@@ -112,6 +112,13 @@ class RookiesGame {
       quickThreshVal: document.getElementById('quick-thresh-val'),
       btnQuickAutoCalib: document.getElementById('btn-quick-auto-calib'),
       autoCalibBtnText: document.getElementById('auto-calib-btn-text'),
+      btnToggleCalibMode: document.getElementById('btn-toggle-calib-mode'),
+      deckLinkedCalib: document.getElementById('deck-linked-calib'),
+      deckSplitCalib: document.getElementById('deck-split-calib'),
+      splitBoysGain: document.getElementById('split-boys-gain'),
+      splitBoysGate: document.getElementById('split-boys-gate'),
+      splitGirlsGain: document.getElementById('split-girls-gain'),
+      splitGirlsGate: document.getElementById('split-girls-gate'),
       quickFormatSelect: document.getElementById('quick-format-select'),
 
       // Settings Modal
@@ -127,6 +134,14 @@ class RookiesGame {
       selectModalSingleMic: document.getElementById('select-modal-single-mic'),
       btnModalSwapMics: document.getElementById('btn-modal-swap-mics'),
       btnModalRefreshMics: document.getElementById('btn-modal-refresh-mics'),
+      modalBoysGain: document.getElementById('modal-boys-gain'),
+      modalBoysGainVal: document.getElementById('modal-boys-gain-val'),
+      modalBoysGate: document.getElementById('modal-boys-gate'),
+      modalBoysGateVal: document.getElementById('modal-boys-gate-val'),
+      modalGirlsGain: document.getElementById('modal-girls-gain'),
+      modalGirlsGainVal: document.getElementById('modal-girls-gain-val'),
+      modalGirlsGate: document.getElementById('modal-girls-gate'),
+      modalGirlsGateVal: document.getElementById('modal-girls-gate-val'),
       audioInputMode: document.getElementById('audio-input-mode'),
       selectMatchFormat: document.getElementById('select-match-format'),
       raceDistanceSelect: document.getElementById('race-distance-select'),
@@ -382,21 +397,91 @@ class RookiesGame {
       });
     }
 
-    // Quick Sensitivity & Threshold Sliders
+    // --- ACOUSTIC CALIBRATION CONTROLS (LINKED & SPLIT MODES) ---
+    // Toggle Linked vs Split Mode in Deck Bay 2
+    if (this.ui.btnToggleCalibMode) {
+      this.ui.btnToggleCalibMode.addEventListener('click', () => {
+        const isLinked = window.gameAudio.calibrationMode === 'linked';
+        window.gameAudio.calibrationMode = isLinked ? 'split' : 'linked';
+        const newMode = window.gameAudio.calibrationMode;
+
+        if (newMode === 'split') {
+          this.ui.btnToggleCalibMode.textContent = 'SPLIT (B/G)';
+          this.ui.btnToggleCalibMode.classList.add('split-active');
+          if (this.ui.deckLinkedCalib) this.ui.deckLinkedCalib.style.display = 'none';
+          if (this.ui.deckSplitCalib) this.ui.deckSplitCalib.style.display = 'flex';
+        } else {
+          this.ui.btnToggleCalibMode.textContent = 'LINKED (B+G)';
+          this.ui.btnToggleCalibMode.classList.remove('split-active');
+          if (this.ui.deckLinkedCalib) this.ui.deckLinkedCalib.style.display = 'flex';
+          if (this.ui.deckSplitCalib) this.ui.deckSplitCalib.style.display = 'none';
+        }
+      });
+    }
+
+    // Helper: Update Boys Gain & UI
+    const updateBoysGain = (val) => {
+      window.gameAudio.boysSensitivity = val;
+      if (this.ui.splitBoysGain) this.ui.splitBoysGain.value = val;
+      if (this.ui.modalBoysGain) this.ui.modalBoysGain.value = val;
+      if (this.ui.modalBoysGainVal) this.ui.modalBoysGainVal.textContent = val.toFixed(1) + 'x';
+    };
+
+    // Helper: Update Boys Noise Gate & UI
+    const updateBoysGate = (val) => {
+      window.gameAudio.boysNoiseFloor = val;
+      if (this.ui.splitBoysGate) this.ui.splitBoysGate.value = val;
+      if (this.ui.modalBoysGate) this.ui.modalBoysGate.value = val;
+      if (this.ui.modalBoysGateVal) this.ui.modalBoysGateVal.textContent = val + ' dB';
+      this._updateThresholdMarkers();
+    };
+
+    // Helper: Update Girls Gain & UI
+    const updateGirlsGain = (val) => {
+      window.gameAudio.girlsSensitivity = val;
+      if (this.ui.splitGirlsGain) this.ui.splitGirlsGain.value = val;
+      if (this.ui.modalGirlsGain) this.ui.modalGirlsGain.value = val;
+      if (this.ui.modalGirlsGainVal) this.ui.modalGirlsGainVal.textContent = val.toFixed(1) + 'x';
+    };
+
+    // Helper: Update Girls Noise Gate & UI
+    const updateGirlsGate = (val) => {
+      window.gameAudio.girlsNoiseFloor = val;
+      if (this.ui.splitGirlsGate) this.ui.splitGirlsGate.value = val;
+      if (this.ui.modalGirlsGate) this.ui.modalGirlsGate.value = val;
+      if (this.ui.modalGirlsGateVal) this.ui.modalGirlsGateVal.textContent = val + ' dB';
+      this._updateThresholdMarkers();
+    };
+
+    // Master Linked Gain Slider
     this.ui.quickSensitivity.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
-      window.gameAudio.sensitivity = val;
       this.ui.quickSensVal.textContent = val.toFixed(1) + 'x';
+      updateBoysGain(val);
+      updateGirlsGain(val);
     });
 
+    // Master Linked Noise Gate Slider
     this.ui.quickThreshold.addEventListener('input', (e) => {
       const val = parseInt(e.target.value);
-      window.gameAudio.noiseFloor = val;
       this.ui.quickThreshVal.textContent = val + ' dB';
-      this._updateThresholdMarkers();
+      updateBoysGate(val);
+      updateGirlsGate(val);
     });
 
-    // 1-Click Room Noise Auto-Calibration Handler (Zero Emojis)
+    // Independent Boys Sliders
+    if (this.ui.splitBoysGain) this.ui.splitBoysGain.addEventListener('input', (e) => updateBoysGain(parseFloat(e.target.value)));
+    if (this.ui.splitBoysGate) this.ui.splitBoysGate.addEventListener('input', (e) => updateBoysGate(parseInt(e.target.value)));
+    if (this.ui.modalBoysGain) this.ui.modalBoysGain.addEventListener('input', (e) => updateBoysGain(parseFloat(e.target.value)));
+    if (this.ui.modalBoysGate) this.ui.modalBoysGate.addEventListener('input', (e) => updateBoysGate(parseInt(e.target.value)));
+
+    // Independent Girls Sliders
+    if (this.ui.splitGirlsGain) this.ui.splitGirlsGain.addEventListener('input', (e) => updateGirlsGain(parseFloat(e.target.value)));
+    if (this.ui.splitGirlsGate) this.ui.splitGirlsGate.addEventListener('input', (e) => updateGirlsGate(parseInt(e.target.value)));
+    if (this.ui.modalGirlsGain) this.ui.modalGirlsGain.addEventListener('input', (e) => updateGirlsGain(parseFloat(e.target.value)));
+    if (this.ui.modalGirlsGate) this.ui.modalGirlsGate.addEventListener('input', (e) => updateGirlsGate(parseInt(e.target.value)));
+
+    // Dual-Channel Room Noise Auto-Calibration Handler
     const handleAutoCalib = () => {
       const btnQ = this.ui.btnQuickAutoCalib;
       const btnM = this.ui.btnModalAutoCalib;
@@ -406,22 +491,24 @@ class RookiesGame {
       if (btnQ) btnQ.disabled = true;
       if (btnM) btnM.disabled = true;
       if (labelQ) labelQ.textContent = 'TUNING...';
-      if (labelM) labelM.textContent = 'Listening to ambient room noise (1.5s)...';
+      if (labelM) labelM.textContent = 'Listening to ambient room noise on both channels (1.5s)...';
 
-      window.gameAudio.startRoomAutoCalibration((newFloor) => {
-        this.ui.quickThreshold.value = newFloor;
-        this.ui.quickThreshVal.textContent = newFloor + ' dB';
-        this._updateThresholdMarkers();
+      window.gameAudio.startRoomAutoCalibration((res) => {
+        const { boysNoiseFloor, girlsNoiseFloor, avgNoiseFloor } = res;
+        updateBoysGate(boysNoiseFloor);
+        updateGirlsGate(girlsNoiseFloor);
+        if (this.ui.quickThreshold) this.ui.quickThreshold.value = avgNoiseFloor;
+        if (this.ui.quickThreshVal) this.ui.quickThreshVal.textContent = avgNoiseFloor + ' dB';
 
-        if (labelQ) labelQ.textContent = `SET (${newFloor} dB)`;
-        if (labelM) labelM.textContent = `Noise Floor Calibrated to ${newFloor} dB!`;
+        if (labelQ) labelQ.textContent = `B:${boysNoiseFloor} G:${girlsNoiseFloor}`;
+        if (labelM) labelM.textContent = `Calibrated! Boys Gate: ${boysNoiseFloor} dB, Girls Gate: ${girlsNoiseFloor} dB`;
 
         setTimeout(() => {
           if (btnQ) btnQ.disabled = false;
           if (btnM) btnM.disabled = false;
           if (labelQ) labelQ.textContent = 'AUTO-GATE';
-          if (labelM) labelM.textContent = 'Auto-Calibrate Room Noise Floor (1.5s)';
-        }, 2200);
+          if (labelM) labelM.textContent = 'Dual Channel Auto-Calibrate (1.5s Ambient Room Listen)';
+        }, 2500);
       });
     };
 
@@ -503,9 +590,10 @@ class RookiesGame {
   }
 
   _updateThresholdMarkers() {
-    const pct = Math.min(100, Math.max(0, ((window.gameAudio.noiseFloor - 25) / 85) * 100));
-    this.ui.boysThresholdMarker.style.left = `${pct}%`;
-    this.ui.girlsThresholdMarker.style.left = `${pct}%`;
+    const pctB = Math.min(100, Math.max(0, ((window.gameAudio.boysNoiseFloor - 25) / 85) * 100));
+    const pctG = Math.min(100, Math.max(0, ((window.gameAudio.girlsNoiseFloor - 25) / 85) * 100));
+    if (this.ui.boysThresholdMarker) this.ui.boysThresholdMarker.style.left = `${pctB}%`;
+    if (this.ui.girlsThresholdMarker) this.ui.girlsThresholdMarker.style.left = `${pctG}%`;
   }
 
   async _setAudioMode(mode) {
@@ -897,16 +985,16 @@ class RookiesGame {
     this._updateAudioUI(audioState);
 
     if (this.state === 'RACING') {
-      this.boysRacer.update(audioState.boysDb, audioState.boysActive, audioState.boysTurbo, dt);
-      this.girlsRacer.update(audioState.girlsDb, audioState.girlsActive, audioState.girlsTurbo, dt);
+      this.boysRacer.update(audioState.boysDb, audioState.boysActive, audioState.boysTurbo, dt, window.gameAudio.boysNoiseFloor);
+      this.girlsRacer.update(audioState.girlsDb, audioState.girlsActive, audioState.girlsTurbo, dt, window.gameAudio.girlsNoiseFloor);
 
       // Accumulate vocal energy points
       if (audioState.boysActive) {
-        this.boysSoundPoints += Math.max(1, Math.round((audioState.boysDb - window.gameAudio.noiseFloor) * 0.4));
+        this.boysSoundPoints += Math.max(1, Math.round((audioState.boysDb - window.gameAudio.boysNoiseFloor) * 0.4));
         if (this.ui.boysSoundPts) this.ui.boysSoundPts.textContent = this.boysSoundPoints.toLocaleString();
       }
       if (audioState.girlsActive) {
-        this.girlsSoundPoints += Math.max(1, Math.round((audioState.girlsDb - window.gameAudio.noiseFloor) * 0.4));
+        this.girlsSoundPoints += Math.max(1, Math.round((audioState.girlsDb - window.gameAudio.girlsNoiseFloor) * 0.4));
         if (this.ui.girlsSoundPts) this.ui.girlsSoundPts.textContent = this.girlsSoundPoints.toLocaleString();
       }
 

@@ -41,10 +41,13 @@ class AudioEngine {
     this.boysPeak = 0;
     this.girlsPeak = 0;
 
-    // Tuned Sensitivity & Noise Gate
-    this.sensitivity = 2.5;
-    this.noiseFloor = 45;       // Ambient threshold
-    this.boostThreshold = 80;   // Turbo threshold (dB)
+    // Tuned Sensitivity & Noise Gate (Independent per channel + Linked mode)
+    this.boysSensitivity = 2.5;
+    this.girlsSensitivity = 2.5;
+    this.boysNoiseFloor = 45;       // Ambient threshold (dB) for Boys
+    this.girlsNoiseFloor = 45;      // Ambient threshold (dB) for Girls
+    this.calibrationMode = 'linked'; // 'linked' or 'split'
+    this.boostThreshold = 80;       // Turbo threshold (dB)
 
     // Routing
     this.leftDeviceId = '';
@@ -53,13 +56,31 @@ class AudioEngine {
     this.isSwapped = false;
     this.isListening = false;
 
-    // Room Auto-Calibration state
+    // Room Auto-Calibration state (Independent per channel)
     this.isCalibrating = false;
-    this.calibrationSamples = [];
+    this.calibrationSamplesLeft = [];
+    this.calibrationSamplesRight = [];
 
     // Keyboard Simulator
     this.simKeys = { KeyA: false, KeyL: false };
     this._initKeyboardSim();
+  }
+ 
+  // Backward compatibility getters & setters for linked calibration
+  get sensitivity() {
+    return (this.boysSensitivity + this.girlsSensitivity) / 2;
+  }
+  set sensitivity(val) {
+    this.boysSensitivity = val;
+    this.girlsSensitivity = val;
+  }
+
+  get noiseFloor() {
+    return (this.boysNoiseFloor + this.girlsNoiseFloor) / 2;
+  }
+  set noiseFloor(val) {
+    this.boysNoiseFloor = val;
+    this.girlsNoiseFloor = val;
   }
 
   async initAudioContext() {
@@ -174,12 +195,26 @@ class AudioEngine {
         echoCancellation: false,
         noiseSuppression: false,
         autoGainControl: false,
-        channelCount: 2
+        channelCount: { ideal: 2, min: 2 }
       }
     };
-    if (devId) constraints.audio.deviceId = { exact: devId };
+    if (devId && devId !== 'default') {
+      constraints.audio.deviceId = { exact: devId };
+    }
 
-    this.streamLeft = await navigator.mediaDevices.getUserMedia(constraints);
+    try {
+      this.streamLeft = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (e) {
+      // Driver or browser fallback if min: 2 is not strictly satisfied
+      delete constraints.audio.channelCount;
+      constraints.audio.channelCount = 2;
+      this.streamLeft = await navigator.mediaDevices.getUserMedia(constraints);
+    }
+
+    const track = this.streamLeft.getAudioTracks()[0];
+    const settings = track ? track.getSettings() : {};
+    console.log(`[AudioEngine] Stereo Split activated on "${track ? track.label : 'source'}". Channels: ${settings.channelCount || 2}`);
+
     const source = this.audioCtx.createMediaStreamSource(this.streamLeft);
 
     this.splitter = this.audioCtx.createChannelSplitter(2);
@@ -327,8 +362,11 @@ class AudioEngine {
     // Map -60..0 dBFS into 35 dB (ambient) .. 112+ dB (crowd scream)
     const baseSpl = (logDb + 60) * 1.32 + 35;
 
-    // Apply sensitivity scaling (allowing fine tuning for mic distance)
-    const sensFactor = (this.sensitivity - 2.5) * 8;
+    // Apply channel-specific sensitivity scaling (allowing individual tuning for mic distance / gain)
+    const sens = (channelSensitivity !== undefined && channelSensitivity !== null)
+      ? channelSensitivity
+      : this.sensitivity;
+    const sensFactor = (sens - 2.5) * 8;
     const calibratedDb = Math.min(115, Math.max(28, baseSpl + sensFactor));
 
     return calibratedDb;
@@ -348,10 +386,10 @@ class AudioEngine {
       targetGirls = this.simKeys.KeyL ? Math.min(108, 92 + jitterL) : 34 + (Math.random() * 3);
     } else {
       if (this.analyserLeft && this.dataLeft && this.freqLeft) {
-        targetBoys = this._calculateAcousticSPL(this.analyserLeft, this.dataLeft, this.freqLeft);
+        targetBoys = this._calculateAcousticSPL(this.analyserLeft, this.dataLeft, this.freqLeft, this.boysSensitivity);
       }
       if (this.analyserRight && this.dataRight && this.freqRight) {
-        targetGirls = this._calculateAcousticSPL(this.analyserRight, this.dataRight, this.freqRight);
+        targetGirls = this._calculateAcousticSPL(this.analyserRight, this.dataRight, this.freqRight, this.girlsSensitivity);
       }
     }
 
@@ -400,9 +438,10 @@ class AudioEngine {
     if (this.boysDb > this.boysPeak) this.boysPeak = Math.round(this.boysDb);
     if (this.girlsDb > this.girlsPeak) this.girlsPeak = Math.round(this.girlsDb);
 
-    // Auto-calibration accumulator
+    // Auto-calibration accumulator (samples each channel independently)
     if (this.isCalibrating) {
-      this.calibrationSamples.push((targetBoys + targetGirls) / 2);
+      this.calibrationSamplesLeft.push(targetBoys);
+      this.calibrationSamplesRight.push(targetGirls);
     }
 
     return {
@@ -412,15 +451,17 @@ class AudioEngine {
       girlsExact: this.girlsDb,
       boysPeakHold: Math.round(this.boysPeakHold),
       girlsPeakHold: Math.round(this.girlsPeakHold),
-      boysActive: this.boysDb > this.noiseFloor,
-      girlsActive: this.girlsDb > this.noiseFloor,
+      boysActive: this.boysDb > this.boysNoiseFloor,
+      girlsActive: this.girlsDb > this.girlsNoiseFloor,
+      boysThreshold: this.boysNoiseFloor,
+      girlsThreshold: this.girlsNoiseFloor,
       boysTurbo: this.boysDb >= this.boostThreshold,
       girlsTurbo: this.girlsDb >= this.boostThreshold
     };
   }
 
   /**
-   * 1-Click Room Noise Auto-Calibrate (Measures ambient noise for 1.5 seconds)
+   * Dual-Channel Room Noise Auto-Calibrate (Measures ambient noise independently for 1.5 seconds)
    */
   async startRoomAutoCalibration(onComplete) {
     if (!this.isListening) {
@@ -429,16 +470,33 @@ class AudioEngine {
     }
 
     this.isCalibrating = true;
-    this.calibrationSamples = [];
+    this.calibrationSamplesLeft = [];
+    this.calibrationSamplesRight = [];
 
     setTimeout(() => {
       this.isCalibrating = false;
-      if (this.calibrationSamples.length > 0) {
-        const sum = this.calibrationSamples.reduce((a, b) => a + b, 0);
-        const avg = sum / this.calibrationSamples.length;
-        // Set noise floor 5 dB above ambient room noise
-        this.noiseFloor = Math.min(65, Math.max(38, Math.round(avg + 5)));
-        if (onComplete) onComplete(this.noiseFloor);
+      let leftFloor = this.boysNoiseFloor;
+      let rightFloor = this.girlsNoiseFloor;
+
+      if (this.calibrationSamplesLeft.length > 0) {
+        const sumL = this.calibrationSamplesLeft.reduce((a, b) => a + b, 0);
+        const avgL = sumL / this.calibrationSamplesLeft.length;
+        leftFloor = Math.min(65, Math.max(35, Math.round(avgL + 5)));
+        this.boysNoiseFloor = leftFloor;
+      }
+      if (this.calibrationSamplesRight.length > 0) {
+        const sumR = this.calibrationSamplesRight.reduce((a, b) => a + b, 0);
+        const avgR = sumR / this.calibrationSamplesRight.length;
+        rightFloor = Math.min(65, Math.max(35, Math.round(avgR + 5)));
+        this.girlsNoiseFloor = rightFloor;
+      }
+
+      if (onComplete) {
+        onComplete({
+          boysNoiseFloor: this.boysNoiseFloor,
+          girlsNoiseFloor: this.girlsNoiseFloor,
+          avgNoiseFloor: Math.round((this.boysNoiseFloor + this.girlsNoiseFloor) / 2)
+        });
       }
     }, 1500);
   }

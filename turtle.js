@@ -74,8 +74,14 @@ class TurtleRacer {
     this.particles = [];
   }
 
-  update(db, isActive, isTurbo, dt = 1/60) {
-    const floor = (typeof window !== 'undefined' && window.gameAudio && window.gameAudio.noiseFloor) ? window.gameAudio.noiseFloor : 42;
+  update(db, isActive, isTurbo, dt = 1/60, channelNoiseFloor) {
+    let floor = channelNoiseFloor;
+    if (floor === undefined || floor === null) {
+      if (typeof window !== 'undefined' && window.gameAudio) {
+        floor = (this.team === 'boys') ? window.gameAudio.boysNoiseFloor : window.gameAudio.girlsNoiseFloor;
+      }
+    }
+    if (floor === undefined || floor === null) floor = 42;
 
     if (isActive && db > floor) {
       const vocalMargin = Math.max(0, db - floor);

@@ -220,22 +220,46 @@
 
       <!-- Deck Bay 2: Acoustic Calibration -->
       <div class="console-module module-tuning">
-        <div class="module-tag">
-          <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
-          <span>ACOUSTIC CALIBRATION</span>
+        <div class="module-header-row">
+          <div class="module-tag">
+            <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+            <span>ACOUSTIC CALIBRATION</span>
+          </div>
+          <!-- Calibration Mode Toggle Pill (Linked vs Split) -->
+          <button id="btn-toggle-calib-mode" class="mode-select-pill" title="Toggle between Linked and Individual (L/R) Calibration">
+            LINKED (B+G)
+          </button>
         </div>
         <div class="module-controls-row">
-          <div class="quick-slider-group">
-            <label for="quick-sensitivity">Gain:</label>
-            <input type="range" id="quick-sensitivity" min="1" max="5" step="0.1" value="2.5">
-            <span id="quick-sens-val">2.5x</span>
+          <!-- Linked Calibration Sliders -->
+          <div id="deck-linked-calib" class="calib-deck-group">
+            <div class="quick-slider-group">
+              <label for="quick-sensitivity">Gain:</label>
+              <input type="range" id="quick-sensitivity" min="1" max="5" step="0.1" value="2.5">
+              <span id="quick-sens-val">2.5x</span>
+            </div>
+            <div class="quick-slider-group">
+              <label for="quick-threshold">Gate:</label>
+              <input type="range" id="quick-threshold" min="20" max="80" step="1" value="45">
+              <span id="quick-thresh-val">45 dB</span>
+            </div>
           </div>
-          <div class="quick-slider-group">
-            <label for="quick-threshold">Gate:</label>
-            <input type="range" id="quick-threshold" min="20" max="80" step="1" value="45">
-            <span id="quick-thresh-val">45 dB</span>
+
+          <!-- Split Individual Calibration Sliders (TWS / Dual Channels) -->
+          <div id="deck-split-calib" class="calib-deck-group" style="display: none;">
+            <div class="split-strip" title="Boys: Left=Gain (1-5x), Right=Gate (20-80dB)">
+              <span class="mic-label-badge boys-tag">B</span>
+              <input type="range" id="split-boys-gain" min="1" max="5" step="0.1" value="2.5" class="split-range" title="Boys Preamp Gain">
+              <input type="range" id="split-boys-gate" min="20" max="80" step="1" value="45" class="split-range" title="Boys Noise Gate">
+            </div>
+            <div class="split-strip" title="Girls: Left=Gain (1-5x), Right=Gate (20-80dB)">
+              <span class="mic-label-badge girls-tag">G</span>
+              <input type="range" id="split-girls-gain" min="1" max="5" step="0.1" value="2.5" class="split-range" title="Girls Preamp Gain">
+              <input type="range" id="split-girls-gate" min="20" max="80" step="1" value="45" class="split-range" title="Girls Noise Gate">
+            </div>
           </div>
-          <button id="btn-quick-auto-calib" class="btn btn-secondary btn-auto-calib" title="Listen to room for 1.5s and auto-set noise floor">
+
+          <button id="btn-quick-auto-calib" class="btn btn-secondary btn-auto-calib" title="Listen to room for 1.5s and auto-calibrate noise floor for each channel">
             <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
             <span id="auto-calib-btn-text">AUTO-GATE</span>
           </button>
@@ -336,27 +360,67 @@
           </div>
 
           <div class="settings-section">
-            <h3>2. Live Decibel Test Meters</h3>
-            <p class="section-help">Test shouting into each mic to calibrate levels!</p>
+            <h3>2. Acoustic Calibration & Individual Channel Tuning</h3>
+            <p class="section-help">
+              Fine-tune sensitivity (preamp gain) and noise gate (floor) independently for Boys and Girls. Ideal for TWS earbuds or wireless dual mics with different acoustic distances.
+            </p>
             <div class="calib-meters-grid">
+              <!-- Boys Channel Card -->
               <div class="calib-box calib-boys">
-                <div class="calib-title">BOYS</div>
-                <div class="calib-val" id="calib-boys-val">0 dB</div>
+                <div class="calib-header-row">
+                  <span class="calib-title">BOYS (CH 1 / L)</span>
+                  <span class="calib-val" id="calib-boys-val">0 dB</span>
+                </div>
                 <div class="calib-bar-wrapper">
                   <div class="calib-bar-fill" id="calib-boys-fill"></div>
                 </div>
+                <div class="modal-channel-controls">
+                  <div class="modal-slider-row">
+                    <label for="modal-boys-gain">Gain:</label>
+                    <input type="range" id="modal-boys-gain" min="1" max="5" step="0.1" value="2.5">
+                    <span id="modal-boys-gain-val">2.5x</span>
+                  </div>
+                  <div class="modal-slider-row">
+                    <label for="modal-boys-gate">Gate:</label>
+                    <input type="range" id="modal-boys-gate" min="20" max="80" step="1" value="45">
+                    <span id="modal-boys-gate-val">45 dB</span>
+                  </div>
+                </div>
               </div>
+
+              <!-- Girls Channel Card -->
               <div class="calib-box calib-girls">
-                <div class="calib-title">GIRLS</div>
-                <div class="calib-val" id="calib-girls-val">0 dB</div>
+                <div class="calib-header-row">
+                  <span class="calib-title">GIRLS (CH 2 / R)</span>
+                  <span class="calib-val" id="calib-girls-val">0 dB</span>
+                </div>
                 <div class="calib-bar-wrapper">
                   <div class="calib-bar-fill" id="calib-girls-fill"></div>
                 </div>
+                <div class="modal-channel-controls">
+                  <div class="modal-slider-row">
+                    <label for="modal-girls-gain">Gain:</label>
+                    <input type="range" id="modal-girls-gain" min="1" max="5" step="0.1" value="2.5">
+                    <span id="modal-girls-gain-val">2.5x</span>
+                  </div>
+                  <div class="modal-slider-row">
+                    <label for="modal-girls-gate">Gate:</label>
+                    <input type="range" id="modal-girls-gate" min="20" max="80" step="1" value="45">
+                    <span id="modal-girls-gate-val">45 dB</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- TWS / Stereo Split Tip Card -->
+            <div class="tws-tip-card">
+              <svg class="svg-icon svg-sm svg-gold" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span><strong>TWS / Single-Point Source Splitting:</strong> When using dual wireless mics (DJI Mic, Hollyland, Rode) or TWS earbuds plugged into a single port, select <em>1 Stereo Mic</em> in Section 1. Ensure receiver is set to <em>Stereo/Split</em> mode (not Mono/Merged). Calibrate each channel independently above to balance room distances.</span>
+            </div>
+
             <button id="btn-modal-auto-calib" class="btn btn-primary btn-sm modal-auto-calib-btn">
               <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-              <span id="modal-auto-calib-text">Auto-Calibrate Room Noise Floor (1.5s)</span>
+              <span id="modal-auto-calib-text">Dual Channel Auto-Calibrate (1.5s Ambient Room Listen)</span>
             </button>
           </div>
 

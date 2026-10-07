@@ -990,6 +990,40 @@ body, html {
   font-variant-numeric: tabular-nums;
 }
 
+/* Deck Split / Linked Calibration Controls */
+.calib-deck-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calib-mode-pill {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calib-mode-pill.split-active {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #6ee7b7;
+}
+
+.split-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.split-range {
+  width: 36px;
+  cursor: pointer;
+  accent-color: var(--accent-lime);
+}
+
 /* SVG Icon Global Utilities */
 .svg-icon {
   width: 18px;
@@ -1251,6 +1285,91 @@ body, html {
 
 .calib-boys .calib-bar-fill { background: var(--boys-primary); }
 .calib-girls .calib-bar-fill { background: var(--girls-primary); }
+
+.calib-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.calib-header-row .calib-title {
+  margin-bottom: 0;
+}
+
+.calib-header-row .calib-val {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  margin-bottom: 0;
+}
+
+.modal-channel-controls {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.modal-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.modal-slider-row label {
+  width: 36px;
+  font-size: 0.74rem;
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.modal-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent-lime);
+  cursor: pointer;
+}
+
+.calib-boys .modal-slider-row input[type="range"] {
+  accent-color: var(--boys-primary);
+}
+
+.calib-girls .modal-slider-row input[type="range"] {
+  accent-color: var(--girls-primary);
+}
+
+.modal-slider-row span {
+  width: 44px;
+  text-align: right;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.tws-tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 14px;
+  margin-bottom: 12px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #e2e8f0;
+}
+
+.tws-tip-card svg {
+  margin-top: 2px;
+}
 
 .modal-footer {
   padding: 16px 24px;
