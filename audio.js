@@ -131,7 +131,8 @@ class AudioEngine {
       this.audioCtx = new AudioContextClass();
     }
     if (this.audioCtx.state === 'suspended') {
-      await this.audioCtx.resume();
+      // Trigger non-blocking resume so getUserMedia permission prompt is never blocked on boot
+      this.audioCtx.resume().catch(() => {});
     }
   }
 
@@ -290,7 +291,9 @@ class AudioEngine {
         autoGainControl: false
       }
     };
-    if (effectiveLeftId) constraintsL.audio.deviceId = { exact: effectiveLeftId };
+    if (effectiveLeftId && effectiveLeftId !== 'default') {
+      constraintsL.audio.deviceId = { exact: effectiveLeftId };
+    }
 
     this.streamLeft = await navigator.mediaDevices.getUserMedia(constraintsL);
     const sourceL = this.audioCtx.createMediaStreamSource(this.streamLeft);
@@ -308,7 +311,9 @@ class AudioEngine {
           autoGainControl: false
         }
       };
-      constraintsR.audio.deviceId = { exact: effectiveRightId };
+      if (effectiveRightId !== 'default') {
+        constraintsR.audio.deviceId = { exact: effectiveRightId };
+      }
 
       this.streamRight = await navigator.mediaDevices.getUserMedia(constraintsR);
       const sourceR = this.audioCtx.createMediaStreamSource(this.streamRight);

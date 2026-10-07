@@ -182,8 +182,8 @@ class RookiesGame {
     this._updateSeriesScoreboard();
     this._bindEvents();
 
-    // Populate mic devices on boot
-    this._populateAudioDevices();
+    // Prompt microphone permissions on open of the site & auto-enable
+    this._autoPromptMicrophone();
 
     // Start 60 FPS animation loop
     this.lastFrameTime = performance.now();
@@ -728,6 +728,45 @@ class RookiesGame {
     }
 
     this._updateMicLabels();
+  }
+
+  async _autoPromptMicrophone() {
+    // 1. Install global one-time gesture audio context unlock listener
+    const unlockAudioContext = () => {
+      if (window.gameAudio && window.gameAudio.audioCtx && window.gameAudio.audioCtx.state === 'suspended') {
+        window.gameAudio.audioCtx.resume();
+      }
+    };
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, unlockAudioContext, { once: true, passive: true });
+    });
+
+    // 2. Check if mediaDevices is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.warn('[AudioEngine] MediaDevices API not supported in this browser.');
+      await this._populateAudioDevices(false);
+      return;
+    }
+
+    // 3. Prompt for microphone permission on open of the site & start listening
+    try {
+      console.log('[AudioEngine] Prompting microphone permission on site open...');
+      const res = await window.gameAudio.startListening();
+      if (res && res.success) {
+        this.ui.micBtnLabel.textContent = 'MIC ON (ACTIVE)';
+        this.ui.btnToggleMic.classList.remove('btn-primary');
+        this.ui.btnToggleMic.classList.add('btn-success');
+        this.ui.btnStartRace.disabled = false;
+        await this._populateAudioDevices(false);
+        this._showNotification('Microphone active • Ready to race!', 2800);
+      } else {
+        // Fallback: Populate devices without active stream
+        await this._populateAudioDevices(false);
+      }
+    } catch (err) {
+      console.warn('[AudioEngine] Microphone permission prompt dismissed or rejected:', err);
+      await this._populateAudioDevices(false);
+    }
   }
 
   async _populateAudioDevices(requestPermission = false) {
