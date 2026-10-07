@@ -72,6 +72,19 @@ class AudioEngine {
     }
   }
 
+  async setInputMode(mode) {
+    this.inputMode = mode;
+    if (this.isListening) {
+      await this.startListening();
+    }
+  }
+
+  async setSingleDevice(deviceId) {
+    this.leftDeviceId = deviceId;
+    this.rightDeviceId = deviceId;
+    if (this.isListening) await this.startListening();
+  }
+
   async startListening() {
     await this.initAudioContext();
     this.stopListening();
@@ -81,6 +94,8 @@ class AudioEngine {
         this._setupKeyboardSimNodes();
       } else if (this.inputMode === 'stereo') {
         await this._setupStereoSplit();
+      } else if (this.inputMode === 'single-shared') {
+        await this._setupSingleShared();
       } else {
         await this._setupDualDevices();
       }
@@ -121,6 +136,35 @@ class AudioEngine {
     this.isSwapped = !this.isSwapped;
     if (this.isListening) await this.startListening();
     return { leftDeviceId: this.leftDeviceId, rightDeviceId: this.rightDeviceId, isSwapped: this.isSwapped };
+  }
+
+  async _setupSingleShared() {
+    const effectiveId = this.leftDeviceId || this.rightDeviceId;
+    const constraints = {
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    };
+    if (effectiveId && effectiveId !== 'default') {
+      constraints.audio.deviceId = { exact: effectiveId };
+    }
+
+    this.streamLeft = await navigator.mediaDevices.getUserMedia(constraints);
+    const source = this.audioCtx.createMediaStreamSource(this.streamLeft);
+
+    this.analyserLeft = this.audioCtx.createAnalyser();
+    this.analyserLeft.fftSize = this.fftSize;
+    this.analyserLeft.smoothingTimeConstant = 0.15;
+    source.connect(this.analyserLeft);
+
+    this.analyserRight = this.audioCtx.createAnalyser();
+    this.analyserRight.fftSize = this.fftSize;
+    this.analyserRight.smoothingTimeConstant = 0.15;
+    source.connect(this.analyserRight);
+
+    this._allocBuffers();
   }
 
   async _setupStereoSplit() {
@@ -406,11 +450,27 @@ class AudioEngine {
     this.girlsPeakHold = 35;
   }
 
-  async getAudioInputDevices() {
+  async getAudioInputDevices(requestPermissionIfNeeded = false) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+      return [];
+    }
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      return devices.filter(d => d.kind === 'audioinput');
-    } catch {
+      let devices = await navigator.mediaDevices.enumerateDevices();
+      let audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+      // In browsers, if permission was never granted, labels are blank strings ""
+      const hasLabels = audioInputs.some(d => d.label && d.label.length > 0);
+      if (!hasLabels && requestPermissionIfNeeded) {
+        // Request temporary stream to reveal hardware device labels
+        const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tempStream.getTracks().forEach(t => t.stop());
+        devices = await navigator.mediaDevices.enumerateDevices();
+        audioInputs = devices.filter(d => d.kind === 'audioinput');
+      }
+
+      return audioInputs;
+    } catch (err) {
+      console.warn('Could not enumerate audio devices:', err);
       return [];
     }
   }

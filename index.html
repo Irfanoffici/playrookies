@@ -155,9 +155,23 @@
     <footer id="hud-footer">
       <!-- Deck Bay 1: Audio Routing -->
       <div class="console-module module-audio">
-        <div class="module-tag">
-          <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg>
-          <span>AUDIO ENGINE</span>
+        <div class="module-header-row">
+          <div class="module-tag">
+            <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg>
+            <span>AUDIO ENGINE</span>
+          </div>
+          <!-- Audio Input Mode & Setup Trigger in Header Row -->
+          <div class="module-header-actions">
+            <select id="quick-audio-mode" class="mode-select-pill" title="Hardware Audio Routing Mode">
+              <option value="dual-device" selected>DUAL MICS</option>
+              <option value="single-shared">1 SHARED MIC</option>
+              <option value="stereo">STEREO (L/R)</option>
+              <option value="keyboard">KEYBOARD (A/L)</option>
+            </select>
+            <button id="btn-audio-setup" class="btn btn-icon btn-header-setup" title="Open Audio Routing & Device Chooser">
+              <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+            </button>
+          </div>
         </div>
         <div class="module-controls-row">
           <button id="btn-toggle-mic" class="btn btn-primary console-btn">
@@ -165,12 +179,12 @@
             <span id="mic-btn-label">ENABLE MICS</span>
           </button>
 
-          <!-- Quick Mic Selector & Swap Bar -->
-          <div class="quick-mic-selector-bar">
+          <!-- Dual Mics Selector Bar -->
+          <div id="quick-dual-mic-bar" class="quick-mic-selector-bar">
             <div class="quick-mic-item">
               <span class="mic-label-badge boys-tag" title="Boys Mic Channel">B</span>
               <select id="quick-select-left-mic" class="mic-mini-select" title="Assign Boys Mic">
-                <option value="">Detecting Mics...</option>
+                <option value="default">Default Mic</option>
               </select>
             </div>
 
@@ -181,9 +195,25 @@
             <div class="quick-mic-item">
               <span class="mic-label-badge girls-tag" title="Girls Mic Channel">G</span>
               <select id="quick-select-right-mic" class="mic-mini-select" title="Assign Girls Mic">
-                <option value="">Detecting Mics...</option>
+                <option value="default">Default Mic</option>
               </select>
             </div>
+          </div>
+
+          <!-- Single Shared Mic Selector Bar (Visible when 1 SHARED MIC is selected) -->
+          <div id="quick-single-mic-bar" class="quick-mic-selector-bar" style="display: none;">
+            <div class="quick-mic-item">
+              <span class="mic-label-badge shared-tag" title="Shared Mic for Both Teams">MIC</span>
+              <select id="quick-select-single-mic" class="mic-mini-select mic-shared-select" title="Assign Shared Mic for Both Teams">
+                <option value="default">Default Mic</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Keyboard Simulator Indicator -->
+          <div id="quick-keyboard-bar" class="quick-keyboard-bar" style="display: none;">
+            <span class="kbd-pill kbd-boys">KEY [A] BOYS</span>
+            <span class="kbd-pill kbd-girls">KEY [L] GIRLS</span>
           </div>
         </div>
       </div>
@@ -255,31 +285,52 @@
         </div>
         <div class="modal-body">
           <div class="settings-section">
-            <h3>1. Microphone Assignment</h3>
+            <h3>1. Microphone Routing & Mode</h3>
             <p class="section-help">
-              Select which microphone controls the <strong>Boys</strong> and <strong>Girls</strong> turtle.
+              Choose how you want to route microphones for the Boys and Girls teams.
             </p>
             <div class="form-row">
-              <label for="select-modal-left-mic">Boys Mic:</label>
-              <select id="select-modal-left-mic" class="form-select"></select>
-            </div>
-            <div class="form-row">
-              <label for="select-modal-right-mic">Girls Mic:</label>
-              <select id="select-modal-right-mic" class="form-select"></select>
-            </div>
-            <div class="form-row">
-              <label for="audio-input-mode">Hardware Routing Mode:</label>
+              <label for="audio-input-mode">Audio Mode:</label>
               <select id="audio-input-mode" class="form-select">
-                <option value="dual-device">Two Separate Microphones (USB / Soundcard)</option>
-                <option value="stereo">1 Stereo Mic (Left = Boys, Right = Girls)</option>
-                <option value="keyboard">Keyboard Simulator (A = Boys, L = Girls)</option>
+                <option value="dual-device" selected>Two Separate Microphones (USB / External Mics)</option>
+                <option value="single-shared">1 Shared Microphone (Same mic for both teams)</option>
+                <option value="stereo">1 Stereo Mic (Left Channel = Boys, Right Channel = Girls)</option>
+                <option value="keyboard">Keyboard Simulator (Key A = Boys, Key L = Girls)</option>
               </select>
             </div>
+            
+            <!-- Dual Mics Assignment Rows -->
+            <div id="modal-dual-mic-fields">
+              <div class="form-row">
+                <label for="select-modal-left-mic">Boys Mic:</label>
+                <select id="select-modal-left-mic" class="form-select"></select>
+              </div>
+              <div class="form-row">
+                <label for="select-modal-right-mic">Girls Mic:</label>
+                <select id="select-modal-right-mic" class="form-select"></select>
+              </div>
+              <div class="form-row">
+                <span>Quick Swap:</span>
+                <button id="btn-modal-swap-mics" class="btn btn-secondary btn-sm">
+                  <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+                  <span>Swap Boys & Girls Assignments</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Single Shared Mic Assignment Row -->
+            <div id="modal-single-mic-fields" style="display: none;">
+              <div class="form-row">
+                <label for="select-modal-single-mic">Shared Mic:</label>
+                <select id="select-modal-single-mic" class="form-select"></select>
+              </div>
+            </div>
+
             <div class="form-row">
-              <span>Quick Swap:</span>
-              <button id="btn-modal-swap-mics" class="btn btn-secondary btn-sm">
-                <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
-                <span>Swap Boys & Girls Assignments</span>
+              <span>Hardware Scan:</span>
+              <button id="btn-modal-refresh-mics" class="btn btn-secondary btn-sm" title="Scan and detect all connected audio input hardware">
+                <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                <span>Detect & Refresh Microphones</span>
               </button>
             </div>
           </div>

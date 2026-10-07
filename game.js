@@ -93,9 +93,15 @@ class RookiesGame {
       // Footer controls & Quick mic selectors
       btnToggleMic: document.getElementById('btn-toggle-mic'),
       micBtnLabel: document.getElementById('mic-btn-label'),
+      quickAudioMode: document.getElementById('quick-audio-mode'),
+      quickDualMicBar: document.getElementById('quick-dual-mic-bar'),
+      quickSingleMicBar: document.getElementById('quick-single-mic-bar'),
+      quickKeyboardBar: document.getElementById('quick-keyboard-bar'),
       quickSelectLeftMic: document.getElementById('quick-select-left-mic'),
       quickSelectRightMic: document.getElementById('quick-select-right-mic'),
+      quickSelectSingleMic: document.getElementById('quick-select-single-mic'),
       btnSwapMics: document.getElementById('btn-swap-mics'),
+      btnAudioSetup: document.getElementById('btn-audio-setup'),
       btnStartRace: document.getElementById('btn-start-race'),
       btnStartLabel: document.getElementById('btn-start-label'),
       btnCalibrate: document.getElementById('btn-calibrate'),
@@ -114,9 +120,13 @@ class RookiesGame {
       btnSaveSettings: document.getElementById('btn-save-settings'),
       btnModalAutoCalib: document.getElementById('btn-modal-auto-calib'),
       modalAutoCalibText: document.getElementById('modal-auto-calib-text'),
+      modalDualMicFields: document.getElementById('modal-dual-mic-fields'),
+      modalSingleMicFields: document.getElementById('modal-single-mic-fields'),
       selectModalLeftMic: document.getElementById('select-modal-left-mic'),
       selectModalRightMic: document.getElementById('select-modal-right-mic'),
+      selectModalSingleMic: document.getElementById('select-modal-single-mic'),
       btnModalSwapMics: document.getElementById('btn-modal-swap-mics'),
+      btnModalRefreshMics: document.getElementById('btn-modal-refresh-mics'),
       audioInputMode: document.getElementById('audio-input-mode'),
       selectMatchFormat: document.getElementById('select-match-format'),
       raceDistanceSelect: document.getElementById('race-distance-select'),
@@ -228,9 +238,25 @@ class RookiesGame {
       this.startCountdown();
     });
 
+    // Audio Input Mode Switchers (Synced between Footer and Modal)
+    const handleModeChange = async (mode) => {
+      await this._setAudioMode(mode);
+    };
+
+    if (this.ui.quickAudioMode) {
+      this.ui.quickAudioMode.addEventListener('change', (e) => handleModeChange(e.target.value));
+    }
+    if (this.ui.audioInputMode) {
+      this.ui.audioInputMode.addEventListener('change', (e) => handleModeChange(e.target.value));
+    }
+
     // Quick Mic Selectors in Footer
     this.ui.quickSelectLeftMic.addEventListener('change', async (e) => {
       const devId = e.target.value;
+      if (devId === '__request__') {
+        await this._populateAudioDevices(true);
+        return;
+      }
       this.ui.selectModalLeftMic.value = devId;
       await window.gameAudio.setLeftDevice(devId);
       this._updateMicLabels();
@@ -238,10 +264,41 @@ class RookiesGame {
 
     this.ui.quickSelectRightMic.addEventListener('change', async (e) => {
       const devId = e.target.value;
+      if (devId === '__request__') {
+        await this._populateAudioDevices(true);
+        return;
+      }
       this.ui.selectModalRightMic.value = devId;
       await window.gameAudio.setRightDevice(devId);
       this._updateMicLabels();
     });
+
+    // Single Shared Mic Selectors
+    if (this.ui.quickSelectSingleMic) {
+      this.ui.quickSelectSingleMic.addEventListener('change', async (e) => {
+        const devId = e.target.value;
+        if (devId === '__request__') {
+          await this._populateAudioDevices(true);
+          return;
+        }
+        if (this.ui.selectModalSingleMic) this.ui.selectModalSingleMic.value = devId;
+        await window.gameAudio.setSingleDevice(devId);
+        this._updateMicLabels();
+      });
+    }
+
+    if (this.ui.selectModalSingleMic) {
+      this.ui.selectModalSingleMic.addEventListener('change', async (e) => {
+        const devId = e.target.value;
+        if (devId === '__request__') {
+          await this._populateAudioDevices(true);
+          return;
+        }
+        if (this.ui.quickSelectSingleMic) this.ui.quickSelectSingleMic.value = devId;
+        await window.gameAudio.setSingleDevice(devId);
+        this._updateMicLabels();
+      });
+    }
 
     // Swap Mics button (1-click Left & Right channel flip)
     const handleSwap = async () => {
@@ -258,6 +315,10 @@ class RookiesGame {
     // Modal Left & Right Mic selects
     this.ui.selectModalLeftMic.addEventListener('change', async (e) => {
       const devId = e.target.value;
+      if (devId === '__request__') {
+        await this._populateAudioDevices(true);
+        return;
+      }
       this.ui.quickSelectLeftMic.value = devId;
       await window.gameAudio.setLeftDevice(devId);
       this._updateMicLabels();
@@ -265,10 +326,61 @@ class RookiesGame {
 
     this.ui.selectModalRightMic.addEventListener('change', async (e) => {
       const devId = e.target.value;
+      if (devId === '__request__') {
+        await this._populateAudioDevices(true);
+        return;
+      }
       this.ui.quickSelectRightMic.value = devId;
       await window.gameAudio.setRightDevice(devId);
       this._updateMicLabels();
     });
+
+    // Dedicated Audio Setup Dialog Trigger
+    if (this.ui.btnAudioSetup) {
+      this.ui.btnAudioSetup.addEventListener('click', async () => {
+        await this._populateAudioDevices(false);
+        this.ui.modalSettings.classList.remove('hidden');
+      });
+    }
+
+    // Hardware Refresh Button in Modal
+    if (this.ui.btnModalRefreshMics) {
+      this.ui.btnModalRefreshMics.addEventListener('click', async () => {
+        const originalText = this.ui.btnModalRefreshMics.innerHTML;
+        this.ui.btnModalRefreshMics.disabled = true;
+        this.ui.btnModalRefreshMics.textContent = 'Scanning hardware...';
+        await this._populateAudioDevices(true);
+        this.ui.btnModalRefreshMics.innerHTML = originalText;
+        this.ui.btnModalRefreshMics.disabled = false;
+      });
+    }
+
+    // Pre-emptive Detection on Dropdown Click
+    const handleMicDropdownInteraction = async () => {
+      if (!window.gameAudio.isListening) {
+        await this._populateAudioDevices(true);
+      }
+    };
+
+    [
+      this.ui.quickSelectLeftMic,
+      this.ui.quickSelectRightMic,
+      this.ui.quickSelectSingleMic,
+      this.ui.selectModalLeftMic,
+      this.ui.selectModalRightMic,
+      this.ui.selectModalSingleMic
+    ].forEach(sel => {
+      if (sel) {
+        sel.addEventListener('mousedown', handleMicDropdownInteraction);
+      }
+    });
+
+    // Hardware Plug/Unplug Listener
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', async () => {
+        await this._populateAudioDevices(false);
+      });
+    }
 
     // Quick Sensitivity & Threshold Sliders
     this.ui.quickSensitivity.addEventListener('input', (e) => {
@@ -318,7 +430,7 @@ class RookiesGame {
 
     // Settings Modal Open/Close
     this.ui.btnCalibrate.addEventListener('click', async () => {
-      await this._populateAudioDevices();
+      await this._populateAudioDevices(false);
       this.ui.modalSettings.classList.remove('hidden');
     });
 
@@ -328,15 +440,6 @@ class RookiesGame {
 
     this.ui.btnSaveSettings.addEventListener('click', () => {
       this.ui.modalSettings.classList.add('hidden');
-    });
-
-    // Audio Input Mode Switcher
-    this.ui.audioInputMode.addEventListener('change', async (e) => {
-      window.gameAudio.inputMode = e.target.value;
-      if (window.gameAudio.isListening) {
-        await window.gameAudio.startListening();
-      }
-      this._updateMicLabels();
     });
 
     // Match Series Format (Best of 3, Best of 5, Single Race)
@@ -405,41 +508,79 @@ class RookiesGame {
     this.ui.girlsThresholdMarker.style.left = `${pct}%`;
   }
 
-  async _populateAudioDevices() {
-    const devices = await window.gameAudio.getAudioInputDevices();
-    if (!devices || devices.length === 0) return;
+  async _setAudioMode(mode) {
+    await window.gameAudio.setInputMode(mode);
+    if (this.ui.quickAudioMode) this.ui.quickAudioMode.value = mode;
+    if (this.ui.audioInputMode) this.ui.audioInputMode.value = mode;
 
-    this.ui.quickSelectLeftMic.innerHTML = '';
-    this.ui.quickSelectRightMic.innerHTML = '';
-    this.ui.selectModalLeftMic.innerHTML = '';
-    this.ui.selectModalRightMic.innerHTML = '';
+    if (this.ui.quickDualMicBar) {
+      this.ui.quickDualMicBar.style.display = (mode === 'dual-device' || mode === 'stereo') ? 'flex' : 'none';
+    }
+    if (this.ui.quickSingleMicBar) {
+      this.ui.quickSingleMicBar.style.display = (mode === 'single-shared') ? 'flex' : 'none';
+    }
+    if (this.ui.quickKeyboardBar) {
+      this.ui.quickKeyboardBar.style.display = (mode === 'keyboard') ? 'flex' : 'none';
+    }
 
-    devices.forEach((d, index) => {
-      const label = d.label || `Microphone ${index + 1}`;
-      
-      const optL = new Option(label, d.deviceId);
-      const optR = new Option(label, d.deviceId);
-      const optModalL = new Option(label, d.deviceId);
-      const optModalR = new Option(label, d.deviceId);
+    if (this.ui.modalDualMicFields) {
+      this.ui.modalDualMicFields.style.display = (mode === 'dual-device' || mode === 'stereo') ? 'block' : 'none';
+    }
+    if (this.ui.modalSingleMicFields) {
+      this.ui.modalSingleMicFields.style.display = (mode === 'single-shared') ? 'block' : 'none';
+    }
 
-      this.ui.quickSelectLeftMic.add(optL);
-      this.ui.quickSelectRightMic.add(optR);
-      this.ui.selectModalLeftMic.add(optModalL);
-      this.ui.selectModalRightMic.add(optModalR);
+    this._updateMicLabels();
+  }
+
+  async _populateAudioDevices(requestPermission = false) {
+    const devices = await window.gameAudio.getAudioInputDevices(requestPermission);
+
+    const selects = [
+      this.ui.quickSelectLeftMic,
+      this.ui.quickSelectRightMic,
+      this.ui.quickSelectSingleMic,
+      this.ui.selectModalLeftMic,
+      this.ui.selectModalRightMic,
+      this.ui.selectModalSingleMic
+    ];
+
+    selects.forEach(sel => {
+      if (sel) sel.innerHTML = '';
     });
 
-    // Defaults: Left = Device 0, Right = Device 1 (if available) or Device 0
-    if (!window.gameAudio.leftDeviceId && devices[0]) {
-      window.gameAudio.leftDeviceId = devices[0].deviceId;
-    }
-    if (!window.gameAudio.rightDeviceId) {
-      window.gameAudio.rightDeviceId = devices.length > 1 ? devices[1].deviceId : devices[0].deviceId;
+    if (devices && devices.length > 0) {
+      devices.forEach((d, index) => {
+        const label = d.label || `Microphone ${index + 1}`;
+        selects.forEach(sel => {
+          if (sel) sel.add(new Option(label, d.deviceId));
+        });
+      });
+
+      if (!window.gameAudio.leftDeviceId && devices[0]) {
+        window.gameAudio.leftDeviceId = devices[0].deviceId;
+      }
+      if (!window.gameAudio.rightDeviceId) {
+        window.gameAudio.rightDeviceId = devices.length > 1 ? devices[1].deviceId : devices[0].deviceId;
+      }
+    } else {
+      selects.forEach(sel => {
+        if (sel) {
+          sel.add(new Option('Default Microphone', 'default'));
+          sel.add(new Option('Detect All Microphones...', '__request__'));
+        }
+      });
     }
 
-    this.ui.quickSelectLeftMic.value = window.gameAudio.leftDeviceId;
-    this.ui.quickSelectRightMic.value = window.gameAudio.rightDeviceId;
-    this.ui.selectModalLeftMic.value = window.gameAudio.leftDeviceId;
-    this.ui.selectModalRightMic.value = window.gameAudio.rightDeviceId;
+    const currentLeft = window.gameAudio.leftDeviceId || 'default';
+    const currentRight = window.gameAudio.rightDeviceId || 'default';
+
+    if (this.ui.quickSelectLeftMic) this.ui.quickSelectLeftMic.value = currentLeft;
+    if (this.ui.quickSelectRightMic) this.ui.quickSelectRightMic.value = currentRight;
+    if (this.ui.quickSelectSingleMic) this.ui.quickSelectSingleMic.value = currentLeft;
+    if (this.ui.selectModalLeftMic) this.ui.selectModalLeftMic.value = currentLeft;
+    if (this.ui.selectModalRightMic) this.ui.selectModalRightMic.value = currentRight;
+    if (this.ui.selectModalSingleMic) this.ui.selectModalSingleMic.value = currentLeft;
 
     this._updateMicLabels();
   }
@@ -455,28 +596,34 @@ class RookiesGame {
       return;
     }
 
+    if (window.gameAudio.inputMode === 'single-shared') {
+      const opt = this.ui.quickSelectSingleMic ? this.ui.quickSelectSingleMic.selectedOptions[0] : null;
+      const label = opt ? opt.textContent.split('(')[0].trim() : 'SHARED';
+      this.ui.boysMicName.textContent = `SHARED (${label.slice(0, 10)})`;
+      this.ui.girlsMicName.textContent = `SHARED (${label.slice(0, 10)})`;
+      this.ui.boysMicName.style.display = 'inline-block';
+      this.ui.girlsMicName.style.display = 'inline-block';
+      return;
+    }
+
+    if (window.gameAudio.inputMode === 'stereo') {
+      this.ui.boysMicName.textContent = 'STEREO L';
+      this.ui.girlsMicName.textContent = 'STEREO R';
+      this.ui.boysMicName.style.display = 'inline-block';
+      this.ui.girlsMicName.style.display = 'inline-block';
+      return;
+    }
+
     const optL = this.ui.quickSelectLeftMic ? this.ui.quickSelectLeftMic.selectedOptions[0] : null;
     const optR = this.ui.quickSelectRightMic ? this.ui.quickSelectRightMic.selectedOptions[0] : null;
 
-    const labelL = optL ? optL.textContent.split('(')[0].trim() : '';
-    const labelR = optR ? optR.textContent.split('(')[0].trim() : '';
+    const labelL = optL ? optL.textContent.split('(')[0].trim() : 'BOYS';
+    const labelR = optR ? optR.textContent.split('(')[0].trim() : 'GIRLS';
 
-    const isGenericL = !labelL || labelL.toLowerCase().includes('left') || labelL.toLowerCase().includes('detecting');
-    const isGenericR = !labelR || labelR.toLowerCase().includes('right') || labelR.toLowerCase().includes('detecting');
-
-    if (!isGenericL) {
-      this.ui.boysMicName.textContent = labelL.slice(0, 16);
-      this.ui.boysMicName.style.display = 'inline-block';
-    } else {
-      this.ui.boysMicName.style.display = 'none';
-    }
-
-    if (!isGenericR) {
-      this.ui.girlsMicName.textContent = labelR.slice(0, 16);
-      this.ui.girlsMicName.style.display = 'inline-block';
-    } else {
-      this.ui.girlsMicName.style.display = 'none';
-    }
+    this.ui.boysMicName.textContent = labelL.slice(0, 14);
+    this.ui.girlsMicName.textContent = labelR.slice(0, 14);
+    this.ui.boysMicName.style.display = 'inline-block';
+    this.ui.girlsMicName.style.display = 'inline-block';
   }
 
   /* ================= SERIES / MATCH SCOREBOARD ================= */
