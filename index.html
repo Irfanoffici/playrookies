@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROOKIES: Turtle Voice Race (Boys vs Girls)</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka+One&family=Outfit:wght@400;600;800;900&family=Russo+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top HUD Bar -->
+    <!-- Top Tournament Broadcast HUD -->
+    <header id="hud-header">
+      <!-- TEAM BOYS BROADCAST CARD -->
+      <div class="team-card team-boys" id="card-boys">
+        <div class="team-header-row">
+          <div class="team-title-wrap">
+            <span class="team-badge">BOYS</span>
+            <span class="team-mic-pill" id="boys-mic-name">CH 1</span>
+          </div>
+          <div class="team-score-badge" title="Rounds Won in Series">
+            <span class="score-label">MATCH PTS</span>
+            <span class="score-digit" id="boys-score-val">0</span>
+          </div>
+        </div>
+
+        <!-- HARDWARE SPL VU METER -->
+        <div class="meter-wrapper">
+          <div class="meter-meta-row">
+            <div class="meter-db-display">
+              <span class="db-num" id="boys-db-text">0.0</span>
+              <span class="db-unit">dB SPL</span>
+            </div>
+            <div class="meter-peak-tag">PEAK <span id="boys-peak-stat">0</span> dB</div>
+          </div>
+          <div class="meter-bar-outer">
+            <div class="meter-scale-ticks">
+              <span>30</span><span>55</span><span>75</span><span>90</span><span>105+</span>
+            </div>
+            <div class="meter-bar-fill boys-fill" id="boys-meter-fill"></div>
+            <div class="meter-peak-needle boys-needle" id="boys-peak-needle"></div>
+            <div class="threshold-marker" id="boys-threshold-marker" title="Room Noise Gate"></div>
+          </div>
+        </div>
+
+        <div class="team-footer-row">
+          <div class="status-indicator" id="boys-status">
+            <span class="status-dot"></span>
+            <span class="status-text">STANDBY</span>
+          </div>
+          <div class="sound-points-tag" title="Vocal Acoustic Energy Score">
+            <span class="pts-label">ENERGY</span>
+            <span class="pts-val" id="boys-sound-pts">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER MATCH ENGINE & TELEMETRY -->
+      <div class="race-center-hud">
+        <div class="tournament-badge-row">
+          <div class="series-pill" id="series-round-indicator">BEST OF 3 • ROUND 1</div>
+          <div class="series-score-pill" id="series-score-summary">SERIES 0 — 0</div>
+        </div>
+
+        <!-- CHAMPIONSHIP LOGO -->
+        <div class="logo-box">
+          <h1 class="pro-game-logo">ROOKIES</h1>
+          <div class="logo-subline">MADRAS ENGINEERING COLLEGE • CROWD VOICE DERBY</div>
+        </div>
+
+        <!-- REAL-TIME TELEMETRY TRACK (Both racers physically advance along track) -->
+        <div class="telemetry-track-container">
+          <div class="track-markers-row">
+            <span>0m START</span>
+            <span class="track-dist-mid" id="track-dist-mid">3000m</span>
+            <span id="track-dist-finish">6000m FINISH</span>
+          </div>
+          <div class="telemetry-bar">
+            <div class="telemetry-fill boys-tele-fill" id="telemetry-boys-fill" style="width: 0%;"></div>
+            <div class="telemetry-fill girls-tele-fill" id="telemetry-girls-fill" style="width: 0%;"></div>
+            <!-- Dynamic Pin Markers that move with real distance -->
+            <div class="telemetry-pin boys-pin" id="telemetry-boys-pin" style="left: 0%;">
+              <span class="pin-marker-head boys-head">B</span>
+            </div>
+            <div class="telemetry-pin girls-pin" id="telemetry-girls-pin" style="left: 0%;">
+              <span class="pin-marker-head girls-head">G</span>
+            </div>
+          </div>
+          <div class="telemetry-delta-badge" id="race-lead-text">
+            <span>READY TO RACE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEAM GIRLS BROADCAST CARD -->
+      <div class="team-card team-girls" id="card-girls">
+        <div class="team-header-row">
+          <div class="team-score-badge" title="Rounds Won in Series">
+            <span class="score-label">MATCH PTS</span>
+            <span class="score-digit" id="girls-score-val">0</span>
+          </div>
+          <div class="team-title-wrap">
+            <span class="team-badge">GIRLS</span>
+            <span class="team-mic-pill" id="girls-mic-name">CH 2</span>
+          </div>
+        </div>
+
+        <!-- HARDWARE SPL VU METER -->
+        <div class="meter-wrapper">
+          <div class="meter-meta-row">
+            <div class="meter-peak-tag">PEAK <span id="girls-peak-stat">0</span> dB</div>
+            <div class="meter-db-display">
+              <span class="db-num" id="girls-db-text">0.0</span>
+              <span class="db-unit">dB SPL</span>
+            </div>
+          </div>
+          <div class="meter-bar-outer">
+            <div class="meter-scale-ticks">
+              <span>30</span><span>55</span><span>75</span><span>90</span><span>105+</span>
+            </div>
+            <div class="meter-bar-fill girls-fill" id="girls-meter-fill"></div>
+            <div class="meter-peak-needle girls-needle" id="girls-peak-needle"></div>
+            <div class="threshold-marker" id="girls-threshold-marker" title="Room Noise Gate"></div>
+          </div>
+        </div>
+
+        <div class="team-footer-row">
+          <div class="sound-points-tag" title="Vocal Acoustic Energy Score">
+            <span class="pts-label">ENERGY</span>
+            <span class="pts-val" id="girls-sound-pts">0</span>
+          </div>
+          <div class="status-indicator" id="girls-status">
+            <span class="status-dot"></span>
+            <span class="status-text">STANDBY</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Canvas Game Area -->
+    <main id="game-stage">
+      <canvas id="raceCanvas"></canvas>
+
+      <!-- Center Big Announcement Overlay (Countdown, Turbo, Alerts) -->
+      <div id="announcement-overlay" class="hidden">
+        <div id="announcement-text">3</div>
+      </div>
+    </main>
+
+    <!-- Bottom Tournament Operations Command Deck -->
+    <footer id="hud-footer">
+      <!-- Deck Bay 1: Audio Routing -->
+      <div class="console-module module-audio">
+        <div class="module-tag">
+          <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg>
+          <span>AUDIO ENGINE</span>
+        </div>
+        <div class="module-controls-row">
+          <button id="btn-toggle-mic" class="btn btn-primary console-btn">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            <span id="mic-btn-label">ENABLE MICS</span>
+          </button>
+
+          <!-- Quick Mic Selector & Swap Bar -->
+          <div class="quick-mic-selector-bar">
+            <div class="quick-mic-item">
+              <span class="mic-label-badge boys-tag" title="Boys Mic Channel">B</span>
+              <select id="quick-select-left-mic" class="mic-mini-select" title="Assign Boys Mic">
+                <option value="">Detecting Mics...</option>
+              </select>
+            </div>
+
+            <button id="btn-swap-mics" class="btn btn-icon btn-swap" title="Swap Team Microphones">
+              <svg class="svg-icon" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+            </button>
+
+            <div class="quick-mic-item">
+              <span class="mic-label-badge girls-tag" title="Girls Mic Channel">G</span>
+              <select id="quick-select-right-mic" class="mic-mini-select" title="Assign Girls Mic">
+                <option value="">Detecting Mics...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deck Bay 2: Acoustic Calibration -->
+      <div class="console-module module-tuning">
+        <div class="module-tag">
+          <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+          <span>ACOUSTIC CALIBRATION</span>
+        </div>
+        <div class="module-controls-row">
+          <div class="quick-slider-group">
+            <label for="quick-sensitivity">Gain:</label>
+            <input type="range" id="quick-sensitivity" min="1" max="5" step="0.1" value="2.5">
+            <span id="quick-sens-val">2.5x</span>
+          </div>
+          <div class="quick-slider-group">
+            <label for="quick-threshold">Gate:</label>
+            <input type="range" id="quick-threshold" min="20" max="80" step="1" value="45">
+            <span id="quick-thresh-val">45 dB</span>
+          </div>
+          <button id="btn-quick-auto-calib" class="btn btn-secondary btn-auto-calib" title="Listen to room for 1.5s and auto-set noise floor">
+            <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <span id="auto-calib-btn-text">AUTO-GATE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Deck Bay 3: Match Operations -->
+      <div class="console-module module-ops">
+        <div class="module-tag">
+          <svg class="svg-icon svg-tiny" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/></svg>
+          <span>MATCH CONTROL</span>
+        </div>
+        <div class="module-controls-row">
+          <select id="quick-format-select" class="format-select-mini" title="Match Series Format">
+            <option value="3" selected>BEST OF 3</option>
+            <option value="5">BEST OF 5</option>
+            <option value="1">SINGLE RACE</option>
+          </select>
+
+          <button id="btn-start-race" class="btn btn-success glow-btn master-cta-btn" disabled>
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z"/></svg>
+            <span id="btn-start-label">START ROUND 1</span>
+          </button>
+
+          <button id="btn-calibrate" class="btn btn-icon" title="Hardware Routing & Distance Settings">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </button>
+
+          <button id="btn-fullscreen" class="btn btn-icon" title="Toggle Fullscreen">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Settings / Calibration Modal -->
+    <div id="modal-settings" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <svg class="svg-icon svg-gold" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            <h2>Microphone Routing & Match Setup</h2>
+          </div>
+          <button id="btn-close-modal" class="modal-close" aria-label="Close">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-section">
+            <h3>1. Microphone Assignment</h3>
+            <p class="section-help">
+              Select which microphone controls the <strong>Boys</strong> and <strong>Girls</strong> turtle.
+            </p>
+            <div class="form-row">
+              <label for="select-modal-left-mic">Boys Mic:</label>
+              <select id="select-modal-left-mic" class="form-select"></select>
+            </div>
+            <div class="form-row">
+              <label for="select-modal-right-mic">Girls Mic:</label>
+              <select id="select-modal-right-mic" class="form-select"></select>
+            </div>
+            <div class="form-row">
+              <label for="audio-input-mode">Hardware Routing Mode:</label>
+              <select id="audio-input-mode" class="form-select">
+                <option value="dual-device">Two Separate Microphones (USB / Soundcard)</option>
+                <option value="stereo">1 Stereo Mic (Left = Boys, Right = Girls)</option>
+                <option value="keyboard">Keyboard Simulator (A = Boys, L = Girls)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <span>Quick Swap:</span>
+              <button id="btn-modal-swap-mics" class="btn btn-secondary btn-sm">
+                <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+                <span>Swap Boys & Girls Assignments</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>2. Live Decibel Test Meters</h3>
+            <p class="section-help">Test shouting into each mic to calibrate levels!</p>
+            <div class="calib-meters-grid">
+              <div class="calib-box calib-boys">
+                <div class="calib-title">BOYS</div>
+                <div class="calib-val" id="calib-boys-val">0 dB</div>
+                <div class="calib-bar-wrapper">
+                  <div class="calib-bar-fill" id="calib-boys-fill"></div>
+                </div>
+              </div>
+              <div class="calib-box calib-girls">
+                <div class="calib-title">GIRLS</div>
+                <div class="calib-val" id="calib-girls-val">0 dB</div>
+                <div class="calib-bar-wrapper">
+                  <div class="calib-bar-fill" id="calib-girls-fill"></div>
+                </div>
+              </div>
+            </div>
+            <button id="btn-modal-auto-calib" class="btn btn-primary btn-sm modal-auto-calib-btn">
+              <svg class="svg-icon svg-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <span id="modal-auto-calib-text">Auto-Calibrate Room Noise Floor (1.5s)</span>
+            </button>
+          </div>
+
+          <div class="settings-section">
+            <h3>3. Match Format & Race Length</h3>
+            <div class="form-row">
+              <label for="select-match-format">Match Series Format:</label>
+              <select id="select-match-format" class="form-select">
+                <option value="3" selected>Best of 3 (First to 2 wins) - Recommended</option>
+                <option value="5">Best of 5 (First to 3 wins)</option>
+                <option value="1">Single Race (1 round)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="race-distance-select">Race Length:</label>
+              <select id="race-distance-select" class="form-select">
+                <option value="3500">Sprint (Quick 20-25s shout)</option>
+                <option value="6000" selected>Lengthy Duel (40-50s battle) - Default</option>
+                <option value="10000">Grand Marathon (75-90s team showdown)</option>
+                <option value="16000">Ultra Endurance (2+ mins of screams)</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="boost-threshold-slider">Turbo Boost Threshold (dB):</label>
+              <input type="range" id="boost-threshold-slider" min="60" max="95" step="1" value="78">
+              <span id="boost-threshold-val">78 dB</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-settings" class="btn btn-primary">Save & Ready</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory / Round Results Modal -->
+    <div id="modal-victory" class="modal-backdrop hidden">
+      <div class="modal-card victory-card">
+        <div class="victory-series-badge" id="victory-series-badge">MADRAS ENGINEERING COLLEGE • CROWD VOICE DERBY</div>
+
+        <!-- SVG Confetti Cannon / Party Icon -->
+        <div class="confetti-cannon">
+          <svg class="svg-party" viewBox="0 0 64 64" width="70" height="70">
+            <path d="M12 48 L22 38 L30 46 L20 56 Z" fill="#ffd700"/>
+            <polygon points="12,48 4,60 16,52" fill="#f59e0b"/>
+            <circle cx="36" cy="24" r="4" fill="#7052ff"/>
+            <circle cx="48" cy="18" r="3" fill="#ff7c77"/>
+            <circle cx="28" cy="16" r="3.5" fill="#d4f879"/>
+            <rect x="42" y="32" width="6" height="6" rx="1" fill="#d4f879" transform="rotate(25 45 35)"/>
+            <rect x="22" y="26" width="6" height="6" rx="1" fill="#ff753a" transform="rotate(45 25 29)"/>
+          </svg>
+        </div>
+
+        <h2 id="victory-title" class="victory-heading">BOYS WIN ROUND 1!</h2>
+
+        <!-- SVG Victory Champion Trophy -->
+        <div class="winner-trophy" id="victory-avatar">
+          <svg viewBox="0 0 64 64" width="80" height="80" fill="none">
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d4f879"/>
+                <stop offset="50%" stop-color="#ffd700"/>
+                <stop offset="100%" stop-color="#ff753a"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 12 H48 V28 C48 37 40 44 32 44 C24 44 16 37 16 28 Z" fill="url(#goldGrad)" stroke="#4f35e0" stroke-width="2"/>
+            <path d="M16 16 H10 C7 16 6 24 10 27 L16 28" stroke="#7052ff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M48 16 H54 C57 16 58 24 54 27 L48 28" stroke="#ff7c77" stroke-width="3" stroke-linecap="round"/>
+            <path d="M28 44 H36 V52 H28 Z" fill="#4f35e0"/>
+            <path d="M20 52 H44 V58 H20 Z" fill="#18172e" rx="2"/>
+            <circle cx="32" cy="26" r="6" fill="#ffffff"/>
+          </svg>
+        </div>
+
+        <p id="victory-subtitle" class="victory-sub">Series Standings: Boys 1 — 0 Girls (First to 2 wins)</p>
+        
+        <div class="victory-stats-grid">
+          <div class="stat-card">
+            <span class="stat-lbl">Boys Peak</span>
+            <span class="stat-val stat-boys-val" id="stat-boys-peak">0 dB</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-lbl">Girls Peak</span>
+            <span class="stat-val stat-girls-val" id="stat-girls-peak">0 dB</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-lbl">Duration</span>
+            <span class="stat-val" id="stat-race-time">0.0s</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-lbl">Acoustic Energy</span>
+            <span class="stat-val" id="stat-total-energy">0 vs 0</span>
+          </div>
+        </div>
+
+        <!-- Official Tournament Series Log -->
+        <div class="series-history-box" id="series-history-box">
+          <div class="history-table-header-row">
+            <span class="history-table-title">TOURNAMENT ROUND BREAKDOWN</span>
+            <span class="history-table-rule" id="history-table-rule">BEST OF 3 • FIRST TO 2 ROUNDS</span>
+          </div>
+          <div class="history-table-wrapper">
+            <table class="history-table" id="series-history-table">
+              <thead>
+                <tr>
+                  <th>ROUND</th>
+                  <th>WINNER</th>
+                  <th>BOYS PEAK</th>
+                  <th>GIRLS PEAK</th>
+                  <th>TIME</th>
+                  <th>SERIES</th>
+                </tr>
+              </thead>
+              <tbody id="series-history-body">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="victory-actions">
+          <button id="btn-rematch" class="btn btn-success glow-btn btn-lg">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.61 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM12 20c-3.31 0-6-2.69-6-6 0-1.53.58-2.92 1.53-3.98.6 1.73 2.14 2.98 3.97 2.98 2.48 0 4.5-2.02 4.5-4.5 0-.37-.05-.72-.13-1.06 1.34 1.63 2.13 3.7 2.13 5.96 0 3.31-2.69 6-6 6z" fill="currentColor"/></svg>
+            <span id="btn-next-action-label">START ROUND 2!</span>
+          </button>
+          <button id="btn-back-lobby" class="btn btn-secondary btn-lg">
+            Back to Match Ops
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound & Game Scripts -->
+  <script src="audio.js"></script>
+  <script src="turtle.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

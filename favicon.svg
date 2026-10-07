@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="mecFav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7052ff"/>
+      <stop offset="100%" stop-color="#ff7c77"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="46" fill="#090a12" stroke="url(#mecFav)" stroke-width="6"/>
+  <ellipse cx="46" cy="50" rx="22" ry="18" fill="#432bb3" stroke="#7052ff" stroke-width="3"/>
+  <circle cx="70" cy="50" r="10" fill="#d4f879" stroke="#4f6617" stroke-width="2"/>
+  <path d="M38 28 C34 18 24 20 28 32" stroke="#d4f879" stroke-width="6" stroke-linecap="round"/>
+  <path d="M38 72 C34 82 24 80 28 68" stroke="#d4f879" stroke-width="6" stroke-linecap="round"/>
+  <path d="M54 26 C60 16 70 18 66 30" stroke="#d4f879" stroke-width="6" stroke-linecap="round"/>
+  <path d="M54 74 C60 84 70 82 66 70" stroke="#d4f879" stroke-width="6" stroke-linecap="round"/>
+</svg>

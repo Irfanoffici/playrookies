@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+screenshot*.png
+final_state.png
+game_cute_track.png
+preview_cute_closeup.png
+preview_cute_turtles.png
+test_cute_turtles.html
